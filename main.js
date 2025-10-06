@@ -1,6 +1,5 @@
 const title = document.getElementById("title");
 const titleBlack = document.getElementById("title-black");
-const paragraph = document.getElementById("paragraph");
 
 const listFonts = async () => {
   const response = await fetch(
@@ -16,11 +15,13 @@ const getRandomFont = (fonts) => {
 
 const loadAllAvailableVariants = async (fontObj) => {
   const entries = Object.entries(fontObj.files); // [ ["100", "..."], ["200","..."], ... ]
+
   const promises = entries.map(([variant, url]) => {
     const weight = variant === "regular" ? "400" : String(variant);
     const face = new FontFace(fontObj.family, `url(${url})`, { weight });
     return face.load().then((f) => document.fonts.add(f));
   });
+
   await Promise.all(promises);
 };
 
@@ -29,42 +30,40 @@ const setFragmentInUrl = (fontObj) => {
 };
 
 const main = async () => {
-  if (window.location.hash) {
-    const fontObj = await listFonts();
-    const font = fontObj.items.find(
-      (font) => font.family === window.location.hash.slice(1)
-    );
-    loadAllAvailableVariants(font).then(() => {
-      document.documentElement.style.setProperty(
-        "--app-font",
-        `"${font.family}", system-ui, sans-serif`
-      );
-    });
-  }
-
   const fonts = await listFonts();
 
-  const randomFont = getRandomFont(fonts);
+  console.log(
+    window.location.hash,
+    decodeURIComponent(window.location.hash.slice(1))
+  );
+
+  const selectedFont = window.location.hash
+    ? fonts.items.find((font) => {
+        console.log({ font });
+        return (
+          font.family === decodeURIComponent(window.location.hash.slice(1))
+        );
+      })
+    : getRandomFont(fonts);
+
+  console.log({ selectedFont });
 
   // Example:
-  loadAllAvailableVariants(randomFont).then(() => {
+  loadAllAvailableVariants(selectedFont).then(() => {
     document.documentElement.style.setProperty(
       "--app-font",
-      `"${randomFont.family}", system-ui, sans-serif`
+      `"${selectedFont.family}", system-ui, sans-serif`
     );
     // then in CSS use: font-family: var(--app-font);
-    title.textContent = randomFont.family;
-    titleBlack.textContent = randomFont.family;
-    setFragmentInUrl(randomFont);
+    title.textContent = selectedFont.family;
+    titleBlack.textContent = selectedFont.family;
+    setFragmentInUrl(selectedFont);
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === " ") {
-      console.log({ event });
-      // load a new font
-
       const newFont = getRandomFont(fonts);
-      console.log({ newFont });
+
       loadAllAvailableVariants(newFont).then(() => {
         document.documentElement.style.setProperty(
           "--app-font",
